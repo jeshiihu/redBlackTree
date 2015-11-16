@@ -1,3 +1,5 @@
+//import java.awt.Color;
+
 enum Colour {BLACK, RED};
 
 public class rbTree {
@@ -111,109 +113,123 @@ public class rbTree {
 		n.l = savedR;
 		if (savedR != null) savedR.p = n;
 	}
+	
+	node getSucc(node n) {
+		node succ = null;
+		node succParent = null;
+		node current = n.l;
+		while(current!=null) {
+			succParent = succ;
+			succ = current;
+			current = current.r;
+		}
+		if(succ!=n.l){
+			succParent.r = succ.l;
+			succ.l = n.l;
+		}
+		return succ;
+	}
+
+	void replaceNode(node n, node child) {
+		if(n==root) {
+			root = child;
+			root.r = n.r;
+			n.r.p = root;
+			n.l.p = root;
+		}
+		else if(n==n.p.l) n.p.l = child;
+		else if(n==n.p.r) n.p.r = child;
+		child.p = n.p;
+	}
+	
 	void delete(int key) {
 		if(search(key) == null) return; //tree does not contain this key, do nothing
 		node removeNode = search(key);
-		if(removeNode.r==null && removeNode.l==null) { // node to be removed  has no children
-			if(removeNode.p.l==removeNode) removeNode.p.l = null;
+		if(removeNode.l==null && removeNode.r==null) { // no children just delete node
+			boolean isLeft = false;
+			if(removeNode.p.l==removeNode) {
+				removeNode.p.l = null;
+				isLeft = true;
+			}
 			if(removeNode.p.r==removeNode) removeNode.p.r = null;
-			return;
+			if(removeNode.c == Colour.BLACK && removeNode.p == root) {
+				if(isLeft) rotateL(root);
+				else rotateR(root);
+			}
 		}
-		deleteOneChild(removeNode);
+		else if(removeNode.l==null&&removeNode.r!=null || removeNode.l!=null&&removeNode.r==null) // one child
+			deleteOneChild(removeNode);
+		else deleteTwoChildren(removeNode);
+	}
+	void deleteTwoChildren(node n) {
+		node succ = getSucc(n);
+		deleteCase1(succ);
+		replaceNode(n, succ);
+		succ.r = n.r;
 	}
 	void deleteOneChild(node n) {
-		node child = (n.r != null) ? n.l: n.r; //if n.r exists, return l, else return r
-		if(n.p.l==n) n.p.l = child;
-		if(n.p.r==n) n.p.r = child;
+		node child = (n.r==null) ? n.l:n.r;
+		replaceNode(n,child);
 		if(n.c == Colour.BLACK) {
 			if(child.c == Colour.RED) child.c = Colour.BLACK;
 			else deleteCase1(child);
 		}
 	}
 	void deleteCase1(node n) { // N is new root
-//		 if (n->parent != NULL)
-//			  delete_case2(n);
+		if(n.p!=null) deleteCase2(n);
 	}
-//	void delete_case2(struct node *n)
-//	{
-//	 struct node *s = sibling(n);
-//
-//	 if (s->color == RED) {
-//	  n->parent->color = RED;
-//	  s->color = BLACK;
-//	  if (n == n->parent->left)
-//	   rotate_left(n->parent);
-//	  else
-//	   rotate_right(n->parent);
-//	 }
-//	 delete_case3(n);
-//	}
-//	void delete_case3(struct node *n)
-//	{
-//	 struct node *s = sibling(n);
-//
-//	 if ((n->parent->color == BLACK) &&
-//	     (s->color == BLACK) &&
-//	     (s->left->color == BLACK) &&
-//	     (s->right->color == BLACK)) {
-//	  s->color = RED;
-//	  delete_case1(n->parent);
-//	 } else
-//	  delete_case4(n);
-//	}
-//	void delete_case4(struct node *n)
-//	{
-//	 struct node *s = sibling(n);
-//
-//	 if ((n->parent->color == RED) &&
-//	     (s->color == BLACK) &&
-//	     (s->left->color == BLACK) &&
-//	     (s->right->color == BLACK)) {
-//	  s->color = RED;
-//	  n->parent->color = BLACK;
-//	 } else
-//	  delete_case5(n);
-//	}
-//	void delete_case5(struct node *n)
-//	{
-//	 struct node *s = sibling(n);
-//
-//	 if  (s->color == BLACK) { /* this if statement is trivial,
-//	due to case 2 (even though case 2 changed the sibling to a sibling's child,
-//	the sibling's child can't be red, since no red parent can have a red child). */
-//	/* the following statements just force the red to be on the left of the left of the parent,
-//	   or right of the right, so case six will rotate correctly. */
-//	  if ((n == n->parent->left) &&
-//	      (s->right->color == BLACK) &&
-//	      (s->left->color == RED)) { /* this last test is trivial too due to cases 2-4. */
-//	   s->color = RED;
-//	   s->left->color = BLACK;
-//	   rotate_right(s);
-//	  } else if ((n == n->parent->right) &&
-//	             (s->left->color == BLACK) &&
-//	             (s->right->color == RED)) {/* this last test is trivial too due to cases 2-4. */
-//	   s->color = RED;
-//	   s->right->color = BLACK;
-//	   rotate_left(s);
-//	  }
-//	 }
-//	 delete_case6(n);
-//	}
-//	void delete_case6(struct node *n)
-//	{
-//	 struct node *s = sibling(n);
-//
-//	 s->color = n->parent->color;
-//	 n->parent->color = BLACK;
-//
-//	 if (n == n->parent->left) {
-//	  s->right->color = BLACK;
-//	  rotate_left(n->parent);
-//	 } else {
-//	  s->left->color = BLACK;
-//	  rotate_right(n->parent);
-//	 }
-//	}
+	void deleteCase2(node n) { // sibling is red and so swap colours of P and S
+		node sib = n.s(n);
+		if(sib.c==Colour.RED) {
+			n.p.c = Colour.RED;
+			sib.c = Colour.BLACK;
+			if(n == n.p.l) rotateL(n.p);
+			if(n == n.p.r) rotateR(n.p);
+		} deleteCase3(n);
+	}
+	void deleteCase3(node n) { //P, S, and S's children are all black
+		node sib = n.s(n);
+		if(n.p.c==Colour.BLACK && sib.c==Colour.BLACK &&
+				((sib.l!=null) ? sib.l.c:Colour.BLACK) ==Colour.BLACK && ((sib.r!=null) ? sib.r.c:Colour.BLACK)==Colour.BLACK) {
+			sib.c = Colour.RED;
+			deleteCase1(n.p);
+		} else deleteCase4(n);
+	}
+	void deleteCase4(node n) { //S and its children are black but P is red
+		node sib = n.s(n);
+		if(n.p.c==Colour.RED && sib.c==Colour.BLACK &&
+				((sib.l!=null) ? sib.l.c:Colour.BLACK)==Colour.BLACK && ((sib.r!=null) ? sib.r.c:Colour.BLACK)==Colour.BLACK) {
+			sib.c = Colour.RED;
+			n.p.c = Colour.BLACK;
+		} else deleteCase5(n);
+	}
+	void deleteCase5(node n) { //S and right of S is black, left of S is left, and N is left of parent
+		node sib = n.s(n);
+		if(sib.c==Colour.BLACK) {
+			if(n==n.p.l && ((sib.r!=null) ? sib.r.c:Colour.BLACK)==Colour.BLACK && 
+					((sib.l!=null) ? sib.l.c:Colour.BLACK)==Colour.RED) {
+				sib.c = Colour.RED;
+				if(sib.l!=null) sib.l.c = Colour.BLACK;
+				rotateR(sib);
+			} else if(n==n.p.r && sib.l.c==Colour.BLACK && sib.r.c==Colour.RED) {
+				sib.c = Colour.RED;
+				if(sib.r!=null) sib.r.c = Colour.BLACK;
+				rotateL(sib);
+			}
+		} deleteCase6(n);
+	}
+	void deleteCase6(node n) { //S is black, right of S is red, and N is left of P
+		node sib = n.s(n);
+		sib.c = n.p.c;
+		n.p.c = Colour.BLACK;
+		if(n==n.p.l) {
+			if(sib.r!=null) sib.r.c = Colour.BLACK;
+			rotateL(n.p);
+		} else {
+			if(sib.l!=null) sib.l.c = Colour.BLACK;
+			rotateR(n.p);
+		}
+	}
 	
 	void isEmpty() {
 		if (root == null) System.out.println("BST is empty.");
@@ -227,7 +243,6 @@ public class rbTree {
 		else printTree(root); 
 	}
 	private void printTree(node n){
-//		System.out.println(n.key + " grandparent is " + ((n.g(n) != null) ? (n.g(n).key) :("")));
 		if(n.l != null) printTree(n.l);
 		if(n==root) System.out.println("  Node:"+n.key + " " + n.c + ", Parent:null");
 		else {
@@ -240,23 +255,30 @@ public class rbTree {
 	public static void main (String[] arg){
 	rbTree tree = new rbTree();
 	testInsert(tree);
+	testDelete(tree);
+	tree.clearTree();
 	}
 
 	private static void testInsert(rbTree tree) { // change keys to test tree
 		System.out.println("== Testing Insertion ==");
-		System.out.println("Insert: 1, 2, 3, 4, 5, 6, 7");
-			tree.insert(8);
-			tree.insert(7);
-			tree.insert(6);
-			tree.insert(5);
-			tree.insert(4);
-			tree.insert(3);
-			tree.insert(2);
 			tree.insert(1);
+			tree.insert(2);
+			tree.insert(3);
+			tree.insert(4);
+			tree.insert(5);
+			tree.insert(6);
+			tree.insert(7);
+			tree.insert(8);
 			tree.printTree();
 			System.out.println("");
-			tree.clearTree();
-			
+	}
+	private static void testDelete(rbTree tree) { // change keys to test tree
+		System.out.println("== Testing Deletion ==");
+			tree.delete(1); System.out.println("deleted 1");
+			tree.delete(2); System.out.println("deleted 2");
+//			tree.delete(3); System.out.println("deleted 3");
+			tree.printTree();
+			System.out.println("");
 	}
 }
 
@@ -280,6 +302,7 @@ class node {
 		this.p = null;
 	}
 
+
 	public node g(node n) { // grandparent
 		 if ((n != null) && (n.p != null)) return n.p.p;
 		 else return null;
@@ -297,3 +320,4 @@ class node {
 		else return n.p.l;
 	}
 }
+
