@@ -133,9 +133,7 @@ public class rbTree {
 	void replaceNode(node n, node child) {
 		if(n==root) {
 			root = child;
-			root.r = n.r;
-			n.r.p = root;
-			n.l.p = root;
+			root.p = null;
 		}
 		else if(n==n.p.l) n.p.l = child;
 		else if(n==n.p.r) n.p.r = child;
@@ -146,15 +144,17 @@ public class rbTree {
 		if(search(key) == null) return; //tree does not contain this key, do nothing
 		node removeNode = search(key);
 		if(removeNode.l==null && removeNode.r==null) { // no children just delete node
-			boolean isLeft = false;
-			if(removeNode.p.l==removeNode) {
-				removeNode.p.l = null;
-				isLeft = true;
+			if(removeNode == root) {
+				root = null;
+				return;
 			}
-			if(removeNode.p.r==removeNode) removeNode.p.r = null;
-			if(removeNode.c == Colour.BLACK && removeNode.p == root) {
-				if(isLeft) rotateL(root);
-				else rotateR(root);
+			if(removeNode.p.l==removeNode) {
+				if(removeNode.c == Colour.BLACK) deleteCase1(removeNode);
+				removeNode.p.l = null;
+			}
+			if(removeNode.p.r==removeNode) {
+				if(removeNode.c ==Colour.BLACK) deleteCase1(removeNode);
+				removeNode.p.r = null;
 			}
 		}
 		else if(removeNode.l==null&&removeNode.r!=null || removeNode.l!=null&&removeNode.r==null) // one child
@@ -274,9 +274,14 @@ public class rbTree {
 	}
 	private static void testDelete(rbTree tree) { // change keys to test tree
 		System.out.println("== Testing Deletion ==");
-			tree.delete(1); System.out.println("deleted 1");
-			tree.delete(2); System.out.println("deleted 2");
-//			tree.delete(3); System.out.println("deleted 3");
+		tree.delete(1); System.out.println("deleted 1");
+		tree.delete(2); System.out.println("deleted 2");
+		tree.delete(3); System.out.println("deleted 3");
+		tree.delete(4); System.out.println("deleted 4");
+		tree.delete(5); System.out.println("deleted 5");
+		tree.delete(6); System.out.println("deleted 6");
+		tree.delete(7); System.out.println("deleted 7");
+		tree.delete(8); System.out.println("deleted 8");
 			tree.printTree();
 			System.out.println("");
 	}
